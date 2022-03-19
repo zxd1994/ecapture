@@ -4,6 +4,16 @@ eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原�
 * bash的命令捕获，HIDS的bash命令监控解决方案。
 * mysql query等数据库的数据库审计解决方案。
 
+
+# 演示
+
+### 截图
+![](./images/openssl-example.jpg)
+
+### 视频
+[https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8](https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8)
+
+
 # 原理
 
 ## 依赖
@@ -25,10 +35,8 @@ CONFIG_PAHOLE_HAS_SPLIT_BTF=y
 CONFIG_DEBUG_INFO_BTF_MODULES=y
 ```
 
-
 ## eBPF技术
 参考[ebpf](https://ebpf.io)官网的介绍
-![](https://ebpf.io/static/overview-bf463455a5666fc3fb841b9240d588ff.png)
 
 ## uprobe HOOK
 
@@ -101,10 +109,37 @@ bin/ecapture
 ### https的无证书抓包 ssldump
 执行任意https网络请求即可使用。
 ```shell
-wget https://www.qq.com
+curl https://www.qq.com
 ```
-# 演示
-[https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8](https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8)
+
+## 注意
+已知centos 8.2的系统上，wget的网络行为无法获取，原因为wget没有使用openssl的so动态链接库`libssl.so`。如你遇到问题，请将详细信息提到[issue](https://github.com/ehids/ecapture/issues/new/choose) 里。
+
+```shell
+[root@localhost ~]# ldd /usr/bin/wget 
+ linux-vdso.so.1 (0x00007ffe65bfb000)
+ libuuid.so.1 => /lib64/libuuid.so.1 (0x00007f9d200a8000)
+ libidn2.so.0 => /lib64/libidn2.so.0 (0x00007f9d1fe8a000)
+ libgpgme.so.11 => /lib64/libgpgme.so.11 (0x00007f9d1fc41000)
+ libmetalink.so.3 => /lib64/libmetalink.so.3 (0x00007f9d1fa30000)
+ libnettle.so.6 => /lib64/libnettle.so.6 (0x00007f9d1f7f7000)
+ libgnutls.so.30 => /lib64/libgnutls.so.30 (0x00007f9d1f43b000)
+ libz.so.1 => /lib64/libz.so.1 (0x00007f9d1f224000)
+ libpsl.so.5 => /lib64/libpsl.so.5 (0x00007f9d1f013000)
+ libc.so.6 => /lib64/libc.so.6 (0x00007f9d1ec4e000)
+ /lib64/ld-linux-x86-64.so.2 (0x00007f9d20537000)
+ libunistring.so.2 => /lib64/libunistring.so.2 (0x00007f9d1e8cd000)
+ libassuan.so.0 => /lib64/libassuan.so.0 (0x00007f9d1e6b9000)
+ libgpg-error.so.0 => /lib64/libgpg-error.so.0 (0x00007f9d1e498000)
+ libexpat.so.1 => /lib64/libexpat.so.1 (0x00007f9d1e25d000)
+ libp11-kit.so.0 => /lib64/libp11-kit.so.0 (0x00007f9d1df2a000)
+ libdl.so.2 => /lib64/libdl.so.2 (0x00007f9d1dd26000)
+ libtasn1.so.6 => /lib64/libtasn1.so.6 (0x00007f9d1db13000)
+ libhogweed.so.4 => /lib64/libhogweed.so.4 (0x00007f9d1d8e3000)
+ libgmp.so.10 => /lib64/libgmp.so.10 (0x00007f9d1d64b000)
+ libffi.so.6 => /lib64/libffi.so.6 (0x00007f9d1d442000)
+ libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f9d1d222000)
+```
 
 ### bash的shell捕获
 ```shell
