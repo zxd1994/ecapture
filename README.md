@@ -7,14 +7,13 @@ eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原�
 * bash的命令捕获，HIDS的bash命令监控解决方案。
 * mysql query等数据库的数据库审计解决方案。
 
+# eCapture Architecure
+![](./images/ecapture-architecture.png)
+
 # 演示
 
-### 截图
-![](./images/openssl-example.jpg)
-
-### 视频
-[https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8](https://v.qq.com/txp/iframe/player.html?vid=m33278fdqt8)
-
+## eCapture User Manual
+[![eCapture User Manual](./images/ecapture-user-manual.png)](https://www.youtube.com/watch?v=CoDIjEQCvvA "eCapture User Manual")
 
 # 使用
 ## 直接运行
@@ -104,6 +103,7 @@ hook了`/bin/bash`的`readline`函数。
 **推荐使用`UBUNTU 21.04`版本的linux测试。**
 
 ## 工具链版本
+* golang 1.16
 * gcc 10.3.0
 * clang 12.0.0  
 * cmake 3.18.4
@@ -124,11 +124,6 @@ bin/ecapture
 ```
 ### 提醒
 首次编译时，需要先下载 `go get -d github.com/shuLhan/go-bindata/cmd/go-bindata`
-
-# 联系我们
-
-##  技术交流群
-![](./images/wechat-group.jpg)
 
 # 参考资料
 [BPF Portability and CO-RE](https://facebookmicrosites.github.io/bpf/blog/2020/02/19/bpf-portability-and-co-re.html)
