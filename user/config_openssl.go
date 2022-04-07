@@ -6,6 +6,7 @@ package user
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ type OpensslConfig struct {
 	eConfig
 	Curlpath string `json:"curlpath"` //curl的文件路径
 	Openssl  string `json:"openssl"`
+	Pthread  string `json:"pthread"` // /lib/x86_64-linux-gnu/libpthread.so.0
 	elfType  uint8  //
 }
 
@@ -48,17 +50,37 @@ func (this *OpensslConfig) Check() error {
 	soPath, e := getDynPathByElf(this.Curlpath, "libssl.so")
 	if e != nil {
 		//this.logger.Printf("get bash:%s dynamic library error:%v.\n", bash, e)
-		this.Openssl = "/lib/x86_64-linux-gnu/libssl.so.1.1"
+		_, e = os.Stat(X86_BINARY_PREFIX)
+		prefix := X86_BINARY_PREFIX
+		if e != nil {
+			prefix = OTHERS_BINARY_PREFIX
+		}
+		this.Openssl = filepath.Join(prefix, "libssl.so.1.1")
 		this.elfType = ELF_TYPE_SO
 		_, e = os.Stat(this.Openssl)
 		if e != nil {
 			return e
 		}
-		return nil
+	} else {
+		this.Openssl = soPath
+		this.elfType = ELF_TYPE_SO
 	}
 
-	this.Openssl = soPath
-	this.elfType = ELF_TYPE_SO
-
+	// find /lib/x86_64-linux-gnu/libpthread.so.0 path
+	pthreadSoPath, e := getDynPathByElf(this.Curlpath, "libpthread.so")
+	if e != nil {
+		_, e = os.Stat(X86_BINARY_PREFIX)
+		prefix := X86_BINARY_PREFIX
+		if e != nil {
+			prefix = OTHERS_BINARY_PREFIX
+		}
+		this.Pthread = filepath.Join(prefix, "libpthread.so.0")
+		_, e = os.Stat(this.Pthread)
+		if e != nil {
+			return e
+		}
+	} else {
+		this.Pthread = pthreadSoPath
+	}
 	return nil
 }
