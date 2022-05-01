@@ -1,4 +1,13 @@
+![](./images/ecapture-logo-400x400.png)
+
 [English](./README.md)
+
+[![GitHub stars](https://img.shields.io/github/stars/ehids/ecapture.svg?label=Stars&logo=github)](https://github.com/ehids/ecapture)
+[![GitHub forks](https://img.shields.io/github/forks/ehids/ecapture?label=Forks&logo=github)](https://github.com/ehids/ecapture)
+[![CI](https://github.com/ehids/ecapture/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/ehids/ecapture/actions/workflows/code-analysis.yml)
+[![Github Version](https://img.shields.io/github/v/release/ehids/ecapture?display_name=tag&include_prereleases&sort=semver)](https://github.com/ehids/ecapture/releases)
+
+### eCapture: 基于eBPF技术实现TLS加密的明文捕获。
 
 ----
 
@@ -29,7 +38,7 @@ eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原�
 
 系统配置要求
 * 系统linux kernel版本必须高于4.18。
-* 开启BTF [BPF Type Format (BTF)](https://www.kernel.org/doc/html/latest/bpf/btf.html) 支持。
+* 开启BTF [BPF Type Format (BTF)](https://www.kernel.org/doc/html/latest/bpf/btf.html) 支持。 (可选, 2022-04-17)
 
 ### 验证方法：
 ```shell
@@ -108,11 +117,11 @@ hook了`/bin/bash`的`readline`函数。
 ## 工具链版本
 * golang 1.16
 * gcc 10.3.0
-* clang 12.0.0
+* clang 9.0.0
 * cmake 3.18.4
-* clang backend: llvm 12.0.0
+* clang backend: llvm 9.0.0
 * pahole >= v1.13
-* kernel config:CONFIG_DEBUG_INFO_BTF=y
+* kernel config:CONFIG_DEBUG_INFO_BTF=y (可选，2022-04-17增加)
 
 
 ## 编译
@@ -122,6 +131,19 @@ cd ecapture
 make
 bin/ecapture
 ```
+
+## 未开启BTF的编译
+2022/04/17起，eCapture支持了未开启BTF的系统编译，编译指令为：`make nocore`。
+
+```shell
+git clone git@github.com:ehids/ecapture.git
+cd ecapture
+make nocore
+bin/ecapture
+```
+
+
+
 
 # 参考资料
 [BPF Portability and CO-RE](https://facebookmicrosites.github.io/bpf/blog/2020/02/19/bpf-portability-and-co-re.html)

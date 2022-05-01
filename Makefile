@@ -1,10 +1,9 @@
-.PHONY: all | env
-all: ebpf assets build
+.PHONY: all | env nocore
+all: autogen ebpf assets build
 	@echo $(shell date)
 
-# centos 8.2  4.18.0-305.3.1.el8.x86_64
-# centos 8.2     gcc Version 8.4.1 20200928 (Red Hat 8.4.1-1) (GCC)
-# clang 12.0.1-4.module_el8.5.0+1025+93159d6c
+nocore: ebpf_nocore assets build_nocore
+	@echo $(shell date)
 
 .ONESHELL:
 SHELL = /bin/sh
@@ -29,25 +28,52 @@ CMD_GO ?= go
 CMD_GREP ?= grep
 CMD_CAT ?= cat
 CMD_MD5 ?= md5sum
+CMD_BPFTOOL ?= bpftool
+STYLE    ?= "{BasedOnStyle: Google, IndentWidth: 4}"
 
 .check_%:
 #
 	@command -v $* >/dev/null
 	if [ $$? -ne 0 ]; then
-		echo "missing required tool $*"
+		echo "eCapture Makefile: missing required tool $*"
 		exit 1
 	else
 		touch $@ # avoid target rebuilds due to inexistent file
 	fi
 
+DEBUG_PRINT ?=
+ifeq ($(DEBUG),1)
+DEBUG_PRINT := -DDEBUG_PRINT
+endif
 
 EXTRA_CFLAGS ?= -O2 -mcpu=v1 \
-	-DDEBUG_PRINT	\
+	$(DEBUG_PRINT)	\
 	-nostdinc \
 	-Wno-pointer-sign
 
 BPFHEADER = -I./kern \
 
+EXTRA_CFLAGS_NOCORE ?= -emit-llvm -O2 -S\
+	-xc -g \
+	-D__BPF_TRACING__ \
+	-D__KERNEL__ \
+	-DNOCORE \
+	$(DEBUG_PRINT) \
+	-Wall \
+	-Wno-unused-variable \
+	-Wno-frame-address \
+	-Wno-unused-value \
+	-Wno-unknown-warning-option \
+	-Wno-pragma-once-outside-header \
+	-Wno-pointer-sign \
+	-Wno-gnu-variable-sized-type-not-at-end \
+	-Wno-deprecated-declarations \
+	-Wno-compare-distinct-pointer-types \
+	-Wno-address-of-packed-member \
+	-fno-stack-protector \
+	-fno-jump-tables \
+	-fno-unwind-tables \
+	-fno-asynchronous-unwind-tables
 #
 # tools version
 #
@@ -55,15 +81,13 @@ BPFHEADER = -I./kern \
 CLANG_VERSION = $(shell $(CMD_CLANG) --version 2>/dev/null | \
 	head -1 | $(CMD_TR) -d '[:alpha:]' | $(CMD_TR) -d '[:space:]' | $(CMD_CUT) -d'.' -f1)
 
-#TODO  系统内核版本检测  5.8 以上
-
 #  clang 编译器版本检测，llvm检测，
 .checkver_$(CMD_CLANG): \
 	| .check_$(CMD_CLANG)
 #
 	@echo $(shell date)
-	@if [ ${CLANG_VERSION} -lt 12 ]; then
-		echo -n "you MUST use clang 12 or newer, "
+	@if [ ${CLANG_VERSION} -lt 9 ]; then
+		echo -n "you MUST use clang 9 or newer, "
 		echo "your current clang version is ${CLANG_VERSION}"
 		exit 1
 	fi
@@ -86,6 +110,10 @@ GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 		fi
 	fi
 	touch $@
+
+# bpftool version
+.checkver_$(CMD_BPFTOOL): \
+	| .check_$(CMD_BPFTOOL)
 
 #
 # version
@@ -114,6 +142,24 @@ VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(LAST_GIT_TAG))
 UNAME_M := $(shell uname -m)
 UNAME_R := $(shell uname -r)
 
+
+#
+# Kernel Version detect
+#
+
+KERNEL_LESS_5_2_FLAGS ?=
+KERNEL_LESS_VERSION := 5.2.0
+HIGHER_VERSION := $(shell echo -e "$(UNAME_R)\n$(KERNEL_LESS_VERSION)" | sort -V | tail --lines=1)
+
+# kernel version compare
+ifeq ($(HIGHER_VERSION),$(KERNEL_LESS_VERSION))
+   # its an older kernel
+   KERNEL_LESS_5_2_FLAGS = -DKERNEL_LESS_5_2
+else
+  # its a newer kernel
+endif
+
+
 #
 # Target Arch
 #
@@ -129,6 +175,10 @@ ifeq ($(UNAME_M),aarch64)
    LINUX_ARCH = arm64
    GO_ARCH = arm64
 endif
+
+#
+# include vpath
+#
 
 KERN_RELEASE ?= $(UNAME_R)
 KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
@@ -150,6 +200,7 @@ TARGETS += kern/mysqld
 # Generate file name-scheme based on TARGETS
 KERN_SOURCES = ${TARGETS:=_kern.c}
 KERN_OBJECTS = ${KERN_SOURCES:.c=.o}
+KERN_OBJECTS_NOCORE = ${KERN_SOURCES:.c=.nocore}
 
 
 .PHONY: env
@@ -243,3 +294,49 @@ build: \
 	.checkver_$(CMD_GO)
 #
 	CGO_ENABLED=0 $(CMD_GO) build -ldflags "-w -s -X 'ecapture/cli/cmd.GitVersion=$(VERSION)'" -o bin/ecapture .
+
+
+
+
+# FOR NO CO-RE
+.PHONY: build_nocore
+build_nocore: \
+	.checkver_$(CMD_GO)
+#
+	CGO_ENABLED=0 $(CMD_GO) build -ldflags "-w -s -X 'ecapture/cli/cmd.GitVersion=[NO_CO_RE]:$(VERSION)' -X 'main.enableCORE=false'" -o bin/ecapture .
+
+
+.PHONY: ebpf_nocore
+ebpf_nocore: $(KERN_OBJECTS_NOCORE)
+
+.PHONY: $(KERN_OBJECTS_NOCORE)
+$(KERN_OBJECTS_NOCORE): %.nocore: %.c \
+	| .checkver_$(CMD_CLANG) \
+	.checkver_$(CMD_GO)
+	$(CMD_CLANG) \
+    		$(BPFHEADER) \
+    		-I $(KERN_SRC_PATH)/arch/$(LINUX_ARCH)/include \
+    		-I $(KERN_SRC_PATH)/arch/$(LINUX_ARCH)/include/uapi \
+    		-I $(KERN_BUILD_PATH)/arch/$(LINUX_ARCH)/include/generated \
+    		-I $(KERN_BUILD_PATH)/arch/$(LINUX_ARCH)/include/generated/uapi \
+    		-I $(KERN_SRC_PATH)/include \
+    		-I $(KERN_BUILD_PATH)/include \
+    		-I $(KERN_SRC_PATH)/include/uapi \
+    		-I $(KERN_BUILD_PATH)/include/generated \
+    		-I $(KERN_BUILD_PATH)/include/generated/uapi \
+    		$(EXTRA_CFLAGS_NOCORE) \
+    		$(KERNEL_LESS_5_2_FLAGS) \
+    		-c $< \
+    		-o - |$(CMD_LLC) \
+    		-march=bpf \
+    		-filetype=obj \
+    		-o $(subst kern/,user/bytecode/,$(subst .c,.o,$<))
+
+# Format the code
+format:
+	@echo "  ->  Formatting code"
+	@clang-format -i -style=$(STYLE) kern/*.c
+	@clang-format -i -style=$(STYLE) kern/common.h
+
+autogen: .checkver_$(CMD_BPFTOOL)
+	$(CMD_BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > kern/vmlinux.h

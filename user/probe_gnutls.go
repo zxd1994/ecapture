@@ -80,7 +80,6 @@ func (this *MGnutlsProbe) Close() error {
 
 //  通过elf的常量替换方式传递数据
 func (this *MGnutlsProbe) constantEditor() []manager.ConstantEditor {
-	//TODO
 	var editor = []manager.ConstantEditor{
 		{
 			Name:  "target_pid",
@@ -164,8 +163,11 @@ func (this *MGnutlsProbe) setupManagers() error {
 			Cur: math.MaxUint64,
 			Max: math.MaxUint64,
 		},
+	}
+
+	if this.conf.EnableGlobalVar() {
 		// 填充 RewriteContants 对应map
-		ConstantEditors: this.constantEditor(),
+		this.bpfManagerOptions.ConstantEditors = this.constantEditor()
 	}
 	return nil
 }

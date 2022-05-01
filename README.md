@@ -1,18 +1,23 @@
+![](./images/ecapture-logo-400x400.png)
+
 [简体中文介绍](./README_CN.md)
 
-----
 [![GitHub stars](https://img.shields.io/github/stars/ehids/ecapture.svg?label=Stars&logo=github)](https://github.com/ehids/ecapture)
 [![GitHub forks](https://img.shields.io/github/forks/ehids/ecapture?label=Forks&logo=github)](https://github.com/ehids/ecapture)
 [![CI](https://github.com/ehids/ecapture/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/ehids/ecapture/actions/workflows/code-analysis.yml)
 [![Github Version](https://img.shields.io/github/v/release/ehids/ecapture?display_name=tag&include_prereleases&sort=semver)](https://github.com/ehids/ecapture/releases)
 
+### eCapture:  capture SSL/TLS text content without CA cert by eBPF.
+
+----
+
 #  How eCapture works
 
 ![](./images/how-ecapture-works.png)
 
-* SSL/TLS text context capture, support openssl\gnutls\nspr(nss) librarys.
-* bash aduit, capture bash command for Host Security Aduot.
-* mysql query SQL aduit, support mysqld 5.6\5.7\8.0, and mariadDB.
+* SSL/TLS text context capture, support openssl\gnutls\nspr(nss) libraries.
+* bash audit, capture bash command for Host Security Audit.
+* mysql query SQL audit, support mysqld 5.6\5.7\8.0, and mariadDB.
 
 # eCapture Architecure
 ![](./images/ecapture-architecture.png)
@@ -24,9 +29,8 @@
 ## use ELF binary file
 Download ELF zip file [release](https://github.com/ehids/ecapture/releases) , unzip and use by command `./ecapture --help`.
 
-
 * Linux kernel version >= 4.18
-* Enable BTF [BPF Type Format (BTF)](https://www.kernel.org/doc/html/latest/bpf/btf.html) 
+* Enable BTF [BPF Type Format (BTF)](https://www.kernel.org/doc/html/latest/bpf/btf.html)  (Optional, 2022-04-17)
 
 ### check your server BTF config：
 ```shell
@@ -38,12 +42,12 @@ CONFIG_DEBUG_INFO_BTF=y
 
 ### tls command
 capture tls text context.
-Setp 1:
+Step 1:
 ```shell
 ./ecapture tls --hex
 ```
 
-Setp 2:
+Step 2:
 ```shell
 curl https://github.com
 ```
@@ -103,19 +107,27 @@ Linux Kernel: >= 4.18.
 ## Tools 
 * golang 1.16
 * gcc 10.3.0
-* clang 12.0.0  
+* clang 9.0.0  
 * cmake 3.18.4
-* clang backend: llvm 12.0.0   
+* clang backend: llvm 9.0.0   
 * pahole >= v1.13
-* kernel config:CONFIG_DEBUG_INFO_BTF=y
+* kernel config:CONFIG_DEBUG_INFO_BTF=y (Optional, 2022-04-17)
 
 ## command
 ```shell
 git clone git@github.com:ehids/ecapture.git
 cd ecapture
 make
-bin/ecapture
+bin/ecapture --help
 ```
+
+## compile without BTF
+eCapture support NO BTF with command `make nocore` to compile on 2022/04/17.
+```shell
+make nocore
+bin/ecapture --help
+```
+
 
 # Contributing
 See [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
