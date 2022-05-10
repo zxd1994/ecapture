@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"ecapture/assets"
+	"log"
+	"math"
+	"os"
+
 	"github.com/cilium/ebpf"
 	manager "github.com/ehids/ebpfmanager"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
-	"log"
-	"math"
-	"os"
 )
 
 const CONN_NOT_FOUND = "[ADDR_NOT_FOUND]"
@@ -22,7 +23,7 @@ type MOpenSSLProbe struct {
 	eventFuncMaps     map[*ebpf.Map]IEventStruct
 	eventMaps         []*ebpf.Map
 
-	// pid[fd:addr]
+	// pid[fd:Addr]
 	pidConns map[uint32]map[uint32]string
 }
 
@@ -282,11 +283,10 @@ func (this *MOpenSSLProbe) GetConn(pid, fd uint32) string {
 	return addr
 }
 
-func (this *MOpenSSLProbe) Write(result string) {
-	// TODO fixme , check result origin , if connEvent ,do not print
-	if result != "" {
-		this.logger.Println(result)
-	}
+func (this *MOpenSSLProbe) Dispatcher(event IEventStruct) {
+	// detect event type TODO
+	this.AddConn(event.(*ConnDataEvent).Pid, event.(*ConnDataEvent).Fd, event.(*ConnDataEvent).Addr)
+	//this.logger.Println(event)
 }
 
 func init() {

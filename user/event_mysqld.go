@@ -8,16 +8,17 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
 	"golang.org/x/sys/unix"
 )
 
 /*
-	u64 pid;
-    u64 timestamp;
-    char query[MAX_DATA_SIZE];
-    u64 alllen;
-    u64 len;
-    char comm[TASK_COMM_LEN];
+   u64 pid;
+   u64 timestamp;
+   char query[MAX_DATA_SIZE];
+   u64 alllen;
+   u64 len;
+   char comm[TASK_COMM_LEN];
 */
 const MYSQLD_MAX_DATA_SIZE = 256
 
@@ -50,14 +51,15 @@ func (this dispatch_command_return) String() string {
 }
 
 type mysqldEvent struct {
-	module    IModule
-	Pid       uint64
-	Timestamp uint64
-	query     [MYSQLD_MAX_DATA_SIZE]uint8
-	alllen    uint64
-	len       uint64
-	comm      [16]uint8
-	retval    dispatch_command_return
+	module     IModule
+	event_type EVENT_TYPE
+	Pid        uint64
+	Timestamp  uint64
+	query      [MYSQLD_MAX_DATA_SIZE]uint8
+	alllen     uint64
+	len        uint64
+	comm       [16]uint8
+	retval     dispatch_command_return
 }
 
 func (this *mysqldEvent) Decode(payload []byte) (err error) {
@@ -105,5 +107,12 @@ func (this *mysqldEvent) Module() IModule {
 }
 
 func (this *mysqldEvent) Clone() IEventStruct {
-	return new(mysqldEvent)
+	event := new(mysqldEvent)
+	event.module = this.module
+	event.event_type = EVENT_TYPE_OUTPUT
+	return event
+}
+
+func (this *mysqldEvent) EventType() EVENT_TYPE {
+	return this.event_type
 }

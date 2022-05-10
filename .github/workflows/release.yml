@@ -36,9 +36,17 @@ jobs:
     - name: Build Changelog
       id: github_release
       uses: mikepenz/release-changelog-builder-action@v1
+      with:
+        configuration: "configuration.json"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Write File
+      uses: DamianReeves/write-file-action@v1.0
+      with:
+        path: ./bin/release_notes.txt
+        contents: |
+          ${{ steps.github_release.outputs.changelog }}
+        write-mode: append
     - name: Release
       run: |
-        echo ${{ steps.github_release.outputs.changelog }} | tee ./bin/release_notes.txt
         make -f builder/Makefile.release release SNAPSHOT_VERSION=${{ steps.get_tags.outputs.VERSION }}
